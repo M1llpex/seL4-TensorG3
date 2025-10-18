@@ -1,4 +1,4 @@
-k#
+#
 # Copyright 2025, Millpex
 #
 # SPDX-License-Identifier: GPL-2.0-only
