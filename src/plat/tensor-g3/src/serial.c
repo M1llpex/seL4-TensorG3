@@ -6,14 +6,17 @@
 
 #include <config.h>
 #include <types.h>
-#include <plat/serial.h> // We will now USE this header properly.
+#include <plat/machine.h> // Include master platform header
+#include <plat/serial.h>
 #include <utils/io.h>
 
 /*
  * Google Tensor G3 (Zuma) Serial Console Driver
  *
  * Hardware: Exynos UART (Samsung serial controller)
- * Source (dmesg): console=ttySAC0,3000000n8 @ 0x10870000, clk=200MHz
+ * Source (Base Address): Tensor-G3.dts.txt / iomem.txt confirm 0x10870000.
+ * Source (IRQ): Tensor-G3.dts.txt confirms IRQ 119.
+ * Source (dmesg): console=ttySAC0,3000000n8, clk=200MHz
  */
 
 /* Helper macro to access a UART register via its offset from the base address. */
@@ -41,8 +44,8 @@ void plat_serial_init(void)
      * the UART for a 3 Mbaud 8N1 console.
      *
      * We do not re-initialize the baud rate or line control.
-     * However, as a defensive measure, we could reset the FIFOs to ensure
-     * a clean state for the kernel. For now, we do nothing.
+     * For now, we do nothing and rely solely on the bootloader configuration.
      */
+    // Optional: Reset FIFOs for a clean state
     // UART_REG(EXYNOS_UART_UFCON) |= (UART_FCON_RX_FIFO_RESET | UART_FCON_TX_FIFO_RESET);
 }
