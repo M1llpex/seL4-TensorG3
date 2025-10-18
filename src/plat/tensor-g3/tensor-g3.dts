@@ -4,40 +4,52 @@
     compatible = "google,tensor-g3", "google,zuma";
     interrupt-parent = <&gic>;
     #address-cells = <2>;
-    #size-cells = <2>;
+    #size-cells = <2>; // Use 2 cells for size as memory is > 4GB
 
     chosen {
-        bootargs = "console=ttySAC0,115200n8";
+        /* Use high-speed console settings observed in dmesg */
+        bootargs = "console=ttySAC0,3000000n8 earlycon";
+        /* Define stdout path for early prints */
+        stdout-path = "serial0:3000000n8";
     };
 
     memory@80000000 {
         device_type = "memory";
-        /* 8GB total memory */
-        reg = <0x0 0x80000000 0x2 0x00000000>;
+        /* 8GB total memory confirmed */
+        reg = <0x0 0x80000000 0x2 0x00000000>; // Start=0x8_00000000, Size=0x2_00000000 (8GB)
     };
 
     gic: interrupt-controller@10400000 {
         compatible = "arm,gic-v3";
-        #interrupt-cells = <3>;
+        #interrupt-cells = <3>; // (type, number, flags) - SPI=0, PPI=1
         #address-cells = <2>;
         #size-cells = <2>;
         interrupt-controller;
-        /* Distributor + Redistributor regions */
-        reg = <0x0 0x10400000 0x0 0x10000>,     /* GICD */
-              <0x0 0x10440000 0x0 0x100000>;    /* GICR */
+        /* Verified addresses and sizes from iomem.txt & reference DTS */
+        reg = <0x0 0x10400000 0x0 0x10000>,     /* GICD (Distributor) */
+              <0x0 0x10480000 0x0 0x200000>;    /* GICR (Redistributors) */
     };
 
     timer {
         compatible = "arm,armv8-timer";
-        interrupts = <1 13 0xf08>,  /* Physical Secure */
-                     <1 14 0xf08>,  /* Physical Non-Secure */
-                     <1 11 0xf08>,  /* Virtual */
-                     <1 10 0xf08>;  /* Hypervisor */
-        clock-frequency = <24576000>;  /* 24.57 MHz */
+        /* Use only the Non-Secure Physical Timer interrupt (PPI 14 = IRQ 30) */
+        /* Type 1 = PPI, Int Number 14, Flags 0x8 = Level Triggered */
+        interrupts = <1 14 0x8>;
+        /* Verified frequency from DTS and test_clk.txt */
+        clock-frequency = <24576000>;
+    };
+
+    /* Define the serial port for early console / stdout */
+    serial0: serial@10870000 {
+        compatible = "samsung,exynos4210-uart";
+        reg = <0x0 0x10870000 0x0 0x100>; // Verified base address
+        /* Verified IRQ from reference DTS */
+        interrupts = <0 119 4>; // Type 0 = SPI, IRQ 119, Flags 4 = Level High
+        clock-frequency = <200000000>; // Clock rate from dmesg
     };
 
     psci {
         compatible = "arm,psci-1.0";
-        method = "smc";
+        method = "smc"; // Confirmed by zuma-cpu.txt
     };
 };
